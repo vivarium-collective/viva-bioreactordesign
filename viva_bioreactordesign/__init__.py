@@ -9,6 +9,7 @@ from viva_bioreactordesign.composites import (
     make_reactor_document,
     make_coupled_document,
 )
+from viva_bioreactordesign.core import build_core
 
 __all__ = [
     'BiRDReactorProcess',
@@ -16,4 +17,5 @@ __all__ = [
     'MonodCellProcess',
     'make_reactor_document',
     'make_coupled_document',
+    'build_core',
 ]
