@@ -25,6 +25,7 @@ from process_bigraph import allocate_core
 from process_bigraph.emitter import RAMEmitter
 
 from viva_bioreactordesign.processes import (
+    BiRDColumn1DProcess,
     BiRDReactorProcess,
     BiRDTransportProcess,
     MonodCellProcess,
@@ -34,6 +35,7 @@ from viva_bioreactordesign.processes import (
 from viva_bioreactordesign.composites._factory import (
     make_reactor_document,
     make_coupled_document,
+    make_column1d_document,
 )
 
 
@@ -49,6 +51,7 @@ def register_bioreactordesign(core=None):
     core.register_link('BiRDReactorProcess', BiRDReactorProcess)
     core.register_link('BiRDTransportProcess', BiRDTransportProcess)
     core.register_link('MonodCellProcess', MonodCellProcess)
+    core.register_link('BiRDColumn1DProcess', BiRDColumn1DProcess)
     core.register_link('ram-emitter', RAMEmitter)
     # Register Visualization Steps so composites can wire them by name.
     from viva_bioreactordesign.visualizations import BioreactorPlots
@@ -141,6 +144,7 @@ def build_composite(name: str, *, overrides: dict | None = None, core=None):
 __all__ = [
     'make_reactor_document',
     'make_coupled_document',
+    'make_column1d_document',
     'register_bioreactordesign',
     'list_composite_specs',
     'load_composite_spec',

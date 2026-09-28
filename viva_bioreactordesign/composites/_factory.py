@@ -259,3 +259,91 @@ def make_coupled_document(
             },
         },
     }
+
+
+def make_column1d_document(
+    reactor_type='bubble_column',
+    n_nodes=20,
+    volume_L=2000.0,
+    diameter_m=0.6,
+    liquid_height_m=6.0,
+    axial_dispersion_m2_s=0.03,
+    gas_flow_rate_Lpm=150.0,
+    temperature_K=303.15,
+    pressure_atm=1.0,
+    o2_fraction_inlet=0.21,
+    co2_fraction_inlet=0.0004,
+    mean_bubble_diameter_mm=3.0,
+    initial_biomass_gL=1.0,
+    initial_do_mgL=8.0,
+    initial_dco2_mgL=0.5,
+    max_growth_rate_per_h=0.05,
+    ks_oxygen_mgL=0.2,
+    yield_biomass_o2=1.2,
+    maintenance_coeff_per_h=0.03,
+    respiratory_quotient=1.0,
+    interval=1.0,
+):
+    """Build the 1D depth-resolved column composite document.
+
+    Declarative equivalent of composites/column_1d.composite.yaml, with
+    adjustable knobs so a viz/render script can drive the axial column
+    headlessly (e.g. a height sweep). Emits depth-resolved profiles
+    (dissolved_o2_profile, biomass_profile, o2_saturation_profile, depths_m) as
+    accumulating lists for depth x time heatmaps, plus volume-averaged scalars.
+    """
+    cfg = {
+        'reactor_type': reactor_type,
+        'n_nodes': n_nodes,
+        'volume_L': volume_L,
+        'diameter_m': diameter_m,
+        'liquid_height_m': liquid_height_m,
+        'axial_dispersion_m2_s': axial_dispersion_m2_s,
+        'gas_flow_rate_Lpm': gas_flow_rate_Lpm,
+        'temperature_K': temperature_K,
+        'pressure_atm': pressure_atm,
+        'o2_fraction_inlet': o2_fraction_inlet,
+        'co2_fraction_inlet': co2_fraction_inlet,
+        'mean_bubble_diameter_mm': mean_bubble_diameter_mm,
+        'initial_biomass_gL': initial_biomass_gL,
+        'initial_do_mgL': initial_do_mgL,
+        'initial_dco2_mgL': initial_dco2_mgL,
+        'max_growth_rate_per_h': max_growth_rate_per_h,
+        'ks_oxygen_mgL': ks_oxygen_mgL,
+        'yield_biomass_o2': yield_biomass_o2,
+        'maintenance_coeff_per_h': maintenance_coeff_per_h,
+        'respiratory_quotient': respiratory_quotient,
+    }
+    ports = [
+        'dissolved_o2_profile', 'dissolved_co2_profile', 'biomass_profile',
+        'o2_saturation_profile', 'depths_m', 'dissolved_o2', 'dissolved_co2',
+        'biomass', 'do_bottom', 'do_top', 'do_gradient', 'kla_o2', 'gas_holdup',
+        'o2_uptake_rate', 'specific_growth_rate', 'superficial_gas_velocity',
+    ]
+    emit_lists = ['dissolved_o2_profile', 'dissolved_co2_profile',
+                  'biomass_profile', 'o2_saturation_profile', 'depths_m']
+    emit_scalars = ['dissolved_o2', 'dissolved_co2', 'biomass', 'do_bottom',
+                    'do_top', 'do_gradient', 'kla_o2', 'o2_uptake_rate',
+                    'specific_growth_rate']
+    emit_cfg = {k: 'list' for k in emit_lists}
+    emit_cfg.update({k: 'float' for k in emit_scalars})
+    emit_cfg['time'] = 'float'
+    emit_inputs = {k: ['stores', k] for k in emit_lists + emit_scalars}
+    emit_inputs['time'] = ['global_time']
+    return {
+        'reactor': {
+            '_type': 'process',
+            'address': 'local:BiRDColumn1DProcess',
+            'config': cfg,
+            'interval': interval,
+            'inputs': {'gas_flow_rate_Lpm': ['stores', 'gas_flow_rate_Lpm']},
+            'outputs': {p: ['stores', p] for p in ports},
+        },
+        'stores': {'gas_flow_rate_Lpm': gas_flow_rate_Lpm},
+        'emitter': {
+            '_type': 'step',
+            'address': 'local:ram-emitter',
+            'config': {'emit': emit_cfg},
+            'inputs': emit_inputs,
+        },
+    }

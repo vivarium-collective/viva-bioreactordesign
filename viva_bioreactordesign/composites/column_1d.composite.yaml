@@ -1,0 +1,112 @@
+# Declarative catalog spec for the 1D depth-resolved (axial) BiRD bioreactor.
+#
+# Where `reactor` is 0D (well-mixed, one scalar per species), this composite
+# runs BiRDColumn1DProcess: the liquid height is discretized into n_nodes
+# stacked control volumes and the dissolved-O2 / CO2 / biomass PROFILES are
+# resolved down the column, evolving in time — giving genuine depth x time
+# fields to visualize as heatmaps. Physics reuses the same shared correlations
+# as the 0D reactor (Higbie kLa, Henry's-law C*), plus hydrostatic pressure
+# and plug-flow gas-O2 depletion up the column as the axial-gradient drivers.
+#
+# Default operating point is a tall (6 m) aerated bubble column at moderate
+# biomass with slow growth, chosen so the column stays aerobic and the DO
+# gradient is smooth, monotone (highest at the sparger), and gently deepening
+# over the run — the honest spatial state, not a fabricated axis.
+# spec_id: viva_bioreactordesign.composites.column_1d
+
+name: column_1d
+description: >
+  1D depth-resolved bubble-column bioreactor (BiRDColumn1DProcess): resolves
+  the dissolved-O2, dissolved-CO2, and biomass profiles along the liquid height
+  (n_nodes axial control volumes) evolving in time. Axial gradient driven by
+  hydrostatic pressure, plug-flow gas-O2 depletion, and Fickian axial mixing;
+  correlations shared with the 0D reactor. Emits depth x time profiles for
+  spatial heatmaps plus volume-averaged scalars.
+tags: [mass-transfer, spatial, 1d, axial-dispersion, bubble-column]
+
+requires:
+  processes: [BiRDColumn1DProcess]
+
+state:
+  reactor:
+    _type: process
+    address: "local:BiRDColumn1DProcess"
+    interval: 1.0
+    config:
+      reactor_type: bubble_column
+      n_nodes: 20
+      volume_L: 2000.0
+      diameter_m: 0.6
+      liquid_height_m: 6.0
+      axial_dispersion_m2_s: 0.03
+      gas_flow_rate_Lpm: 150.0
+      temperature_K: 303.15
+      pressure_atm: 1.0
+      o2_fraction_inlet: 0.21
+      co2_fraction_inlet: 0.0004
+      mean_bubble_diameter_mm: 3.0
+      initial_biomass_gL: 1.0
+      initial_do_mgL: 8.0
+      initial_dco2_mgL: 0.5
+      max_growth_rate_per_h: 0.05
+      ks_oxygen_mgL: 0.2
+      yield_biomass_o2: 1.2
+      maintenance_coeff_per_h: 0.03
+      respiratory_quotient: 1.0
+    inputs:
+      gas_flow_rate_Lpm: [stores, gas_flow_rate_Lpm]
+    outputs:
+      dissolved_o2_profile: [stores, dissolved_o2_profile]
+      dissolved_co2_profile: [stores, dissolved_co2_profile]
+      biomass_profile: [stores, biomass_profile]
+      o2_saturation_profile: [stores, o2_saturation_profile]
+      depths_m: [stores, depths_m]
+      dissolved_o2: [stores, dissolved_o2]
+      dissolved_co2: [stores, dissolved_co2]
+      biomass: [stores, biomass]
+      do_bottom: [stores, do_bottom]
+      do_top: [stores, do_top]
+      do_gradient: [stores, do_gradient]
+      kla_o2: [stores, kla_o2]
+      gas_holdup: [stores, gas_holdup]
+      o2_uptake_rate: [stores, o2_uptake_rate]
+      specific_growth_rate: [stores, specific_growth_rate]
+      superficial_gas_velocity: [stores, superficial_gas_velocity]
+  stores:
+    gas_flow_rate_Lpm: 150.0
+  emitter:
+    _type: step
+    address: "local:ram-emitter"
+    config:
+      emit:
+        dissolved_o2_profile: list
+        dissolved_co2_profile: list
+        biomass_profile: list
+        o2_saturation_profile: list
+        depths_m: list
+        dissolved_o2: float
+        dissolved_co2: float
+        biomass: float
+        do_bottom: float
+        do_top: float
+        do_gradient: float
+        kla_o2: float
+        o2_uptake_rate: float
+        specific_growth_rate: float
+        time: float
+    inputs:
+      dissolved_o2_profile: [stores, dissolved_o2_profile]
+      dissolved_co2_profile: [stores, dissolved_co2_profile]
+      biomass_profile: [stores, biomass_profile]
+      o2_saturation_profile: [stores, o2_saturation_profile]
+      depths_m: [stores, depths_m]
+      dissolved_o2: [stores, dissolved_o2]
+      dissolved_co2: [stores, dissolved_co2]
+      biomass: [stores, biomass]
+      do_bottom: [stores, do_bottom]
+      do_top: [stores, do_top]
+      do_gradient: [stores, do_gradient]
+      kla_o2: [stores, kla_o2]
+      o2_uptake_rate: [stores, o2_uptake_rate]
+      specific_growth_rate: [stores, specific_growth_rate]
+      time: [global_time]
