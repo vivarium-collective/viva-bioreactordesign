@@ -46,6 +46,19 @@ def build_core(core=None):
     except Exception:
         pass
 
+    # Every viva-bioreactordesign composite wires its time-series sink at
+    # ``address: local:ram-emitter`` (see composites/_factory.py and the
+    # *.composite.yaml specs). ``allocate_core()`` alone does not resolve that
+    # link at realize time, so register it explicitly here — mirroring the test
+    # fixture (tests/test_composites.py) — so both the pytest verifiers and the
+    # workbench run path realize the composites identically.
+    try:
+        from process_bigraph.emitter import RAMEmitter
+
+        core.register_link("ram-emitter", RAMEmitter)
+    except Exception:
+        pass
+
     return core
 
 
