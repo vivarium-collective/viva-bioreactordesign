@@ -149,7 +149,7 @@ def _render_one(address, config, runs_db, study_yaml):
         return _p.read_text(encoding='utf-8', errors='replace')
     return f'<p style="color:#6b7280">unsupported figure type: {address}</p>'
 
-# ## Study: `bird-01-transport-process`
+# ## Study: Transport-process split (`bird-01-transport-process`)
 #
 # **Question.** Can the gas–liquid transport physics be extracted into a shared module
 # and exposed as a biomass-as-input BiRDTransportProcess that emits only
@@ -170,6 +170,8 @@ def _render_one(address, config, runs_db, study_yaml):
 # contract; standalone BiRDReactorProcess (transport + MonodCellProcess) is
 # unchanged within tolerance and the bird_disable_internal_biomass flag is
 # removed as obsolete.
+#
+# **Claim.** The gas-liquid transport physics is cleanly extracted: the standalone BiRDReactorProcess reproduces the pre-refactor trajectories, while the transport-only BiRDTransportProcess emits zero biomass delta, kLa-driven O2 transport, zero glucose transport, and symmetric CO2 stripping - biomass ownership sits entirely with the cell engine.
 
 # ### Parameters
 #
@@ -225,7 +227,7 @@ RUNS_DB = str(STUDY_DIR / "runs.db")
 
 print("No recorded runs for this study; nothing to reproduce.")
 
-# ## Study: `bird-02-closed-loop-liveness`
+# ## Study: Closed-loop liveness (`bird-02-closed-loop-liveness`)
 #
 # **Question.** When BiRDTransportProcess is coupled to the Phase-1 MonodCellProcess at a
 # static high biomass density, does the reactor→cell feedback fire —
@@ -240,6 +242,8 @@ print("No recorded runs for this study; nothing to reproduce.")
 # saturation, d[O2]/dt equals reactor transport minus cell consumption at
 # every step, and removing the biomass input returns O2 to saturation —
 # confirming a live, bidirectional loop.
+#
+# **Claim.** Coupling the transport process to the Monod cell at high biomass fires the reactor->cell feedback - dissolved O2 drops below air saturation as consumption outpaces transport - and recovers toward saturation when biomass is removed; the O2 mass balance closes.
 
 # ### Parameters
 #
@@ -296,7 +300,7 @@ RUNS_DB = str(STUDY_DIR / "runs.db")
 
 print("No recorded runs for this study; nothing to reproduce.")
 
-# ## Study: `bird-03-coupling-interval`
+# ## Study: Coupling-interval convergence (`bird-03-coupling-interval`)
 #
 # **Question.** Can the reactor coupling/update interval be exposed as a tunable parameter,
 # and does the coupled trajectory converge as the interval decreases?
@@ -308,6 +312,8 @@ print("No recorded runs for this study; nothing to reproduce.")
 # dissolved-O2 trajectory (changes below tolerance under interval halving),
 # so the interval can trade fidelity against cost without changing the
 # qualitative result.
+#
+# **Claim.** The reactor coupling/update interval is a tunable parameter, and the coupled trajectory converges as the interval decreases (dt -> 0).
 
 # ### Parameters
 #
@@ -364,7 +370,7 @@ RUNS_DB = str(STUDY_DIR / "runs.db")
 
 print("No recorded runs for this study; nothing to reproduce.")
 
-# ## Study: `bird-04-reactor-geometry`
+# ## Study: Reactor geometry & axial structure (`bird-04-reactor-geometry`)
 #
 # **Question.** Can the reactor support a stirred-tank kLa correlation (the benchmark
 # geometry) alongside the bubble-column form, selectable by configuration?
@@ -376,6 +382,8 @@ print("No recorded runs for this study; nothing to reproduce.")
 # **Hypothesis.** A geometry configuration field selects the kLa correlation, and under
 # stirred-tank geometry kLa matches the published correlation for the
 # configured power input and superficial gas velocity within tolerance.
+#
+# **Claim.** The reactor supports a stirred-tank (Van't Riet) kLa correlation alongside the bubble-column (Higbie) form, selectable by configuration; a depth-resolved 1D column additionally resolves the axial O2/biomass structure the 0D model cannot express.
 
 # ### Parameters
 #
