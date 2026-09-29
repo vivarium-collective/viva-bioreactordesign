@@ -118,3 +118,9 @@ title: Coupling-interval convergence
 claim: The reactor coupling/update interval is a tunable parameter, and the coupled trajectory 
   converges as the interval decreases (dt -> 0).
 confidence: Accepted
+embed_visualizations:
+- name: bird-03-dashboard
+  title: BiRD-03 dashboard
+  url: /studies/bird-03-coupling-interval/viz/bird-03-dashboard.html
+  description: Coupling-interval convergence — dt trajectory fan, log-log error->0 (order~1.2), 
+    biomass collapse, transient error decay.

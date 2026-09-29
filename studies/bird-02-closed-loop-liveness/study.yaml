@@ -142,3 +142,9 @@ claim: Coupling the transport process to the Monod cell at high biomass fires th
   feedback - dissolved O2 drops below air saturation as consumption outpaces transport - and 
   recovers toward saturation when biomass is removed; the O2 mass balance closes.
 confidence: Accepted
+embed_visualizations:
+- name: bird-02-dashboard
+  title: BiRD-02 dashboard
+  url: /studies/bird-02-closed-loop-liveness/viz/bird-02-dashboard.html
+  description: Closed-loop liveness — DO drawdown below the saturation band, supply vs demand, 
+    high-biomass vs biomass-removed recovery, biomass + growth rate.
