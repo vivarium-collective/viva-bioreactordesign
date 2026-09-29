@@ -22,6 +22,7 @@ state.
 Time units: hours. Concentrations: mg/L (gas species) or g/L (biomass).
 """
 
+import math
 import numpy as np
 from scipy.integrate import solve_ivp
 from process_bigraph import Process
@@ -484,3 +485,254 @@ class BiRDTransportProcess(Process):
             'gas_holdup': t['alpha_gas'],
             'superficial_gas_velocity': t['Ug'],
         }
+
+
+class BiRDColumn1DProcess(Process):
+    """1D depth-resolved (axial) bubble-column reactor.
+
+    Where BiRDReactorProcess is 0D (well-mixed, one scalar per species), this
+    process discretizes the liquid height into ``n_nodes`` stacked control
+    volumes (index 0 = bottom / sparger, n_nodes-1 = top / free surface) and
+    resolves the dissolved-species and biomass profiles DOWN the column,
+    evolving in time. That gives genuine depth x time fields to visualize as
+    heatmaps — the spatial state a 0D model cannot express.
+
+    The physics reuses the SAME shared correlations as the 0D reactor
+    (``transport.compute_transport_state`` for kLa / gas holdup, Henry's-law
+    ``saturation_concentration`` for C*), so a tall column reduces to the 0D
+    reactor in the well-mixed limit. Three real effects create the axial
+    gradient:
+
+      1. **Hydrostatic pressure.** P(z) = P_head + rho*g*(H - z); deeper liquid
+         is at higher pressure, so O2 solubility C* is highest at the sparger.
+      2. **Gas-phase O2 depletion.** Gas enters at the bottom and gives up O2 to
+         the liquid as it rises (a plug-flow gas balance), so the gas-phase O2
+         mole fraction — and thus C* — falls toward the top.
+      3. **Axial liquid dispersion** (Fickian, ``axial_dispersion_m2_s``)
+         couples neighbouring nodes; consumption (Monod OUR) draws each node
+         down between transfer and mixing.
+
+    Per-node liquid balance (mg/(L.h)):
+        dC_O2/dt  = kLa*(C*(z) - C_O2)  - OUR(z)  + D_ax d2C_O2/dz2
+        dC_CO2/dt = CER(z) - kLa*(C_CO2 - C*_CO2) + D_ax d2C_CO2/dz2
+        dX/dt     = mu(z)*X               + D_ax d2X/dz2
+    with no-flux (Neumann) boundaries at the sparger and free surface. Time
+    units: hours; concentrations mg/L (gas species) or g/L (biomass); depth m.
+    """
+
+    R_GAS = 8.314          # J/(mol.K)
+    P_ATM_PA = 101325.0    # Pa per atm
+
+    config_schema = {
+        # Geometry / discretization
+        'reactor_type': {'_type': 'string', '_default': 'bubble_column'},
+        'n_nodes': {'_type': 'integer', '_default': 20},
+        'volume_L': {'_type': 'float', '_default': 2000.0},
+        'diameter_m': {'_type': 'float', '_default': 0.6},
+        'liquid_height_m': {'_type': 'float', '_default': 6.0},
+        'axial_dispersion_m2_s': {'_type': 'float', '_default': 0.03},
+        # Operating conditions
+        'gas_flow_rate_Lpm': {'_type': 'float', '_default': 150.0},
+        'temperature_K': {'_type': 'float', '_default': 303.15},
+        'pressure_atm': {'_type': 'float', '_default': 1.0},
+        'o2_fraction_inlet': {'_type': 'float', '_default': 0.21},
+        'co2_fraction_inlet': {'_type': 'float', '_default': 0.0004},
+        'mean_bubble_diameter_mm': {'_type': 'float', '_default': 3.0},
+        # Microbial kinetics (shared with the 0D reactor)
+        'initial_biomass_gL': {'_type': 'float', '_default': 1.0},
+        'initial_do_mgL': {'_type': 'float', '_default': 8.0},
+        'initial_dco2_mgL': {'_type': 'float', '_default': 0.5},
+        'max_growth_rate_per_h': {'_type': 'float', '_default': 0.05},
+        'ks_oxygen_mgL': {'_type': 'float', '_default': 0.2},
+        'yield_biomass_o2': {'_type': 'float', '_default': 1.2},
+        'maintenance_coeff_per_h': {'_type': 'float', '_default': 0.03},
+        'respiratory_quotient': {'_type': 'float', '_default': 1.0},
+        'impeller_power_W': {'_type': 'float', '_default': 0.0},
+        'kla_correlation': {'_type': 'string', '_default': 'auto'},
+    }
+
+    def __init__(self, config=None, core=None):
+        super().__init__(config=config, core=core)
+        self._O2 = None    # np.ndarray[n_nodes], dissolved O2 (mg/L), index 0 = bottom
+        self._CO2 = None
+        self._X = None
+        self._last = {}     # last derived profiles (for emit)
+
+    # ports ------------------------------------------------------------------
+    def inputs(self):
+        return {'gas_flow_rate_Lpm': 'float'}
+
+    def outputs(self):
+        return {
+            # depth-resolved profiles (index 0 = bottom); overwrite each tick so
+            # the emitter accumulates a [time, depth] field for the heatmap.
+            'dissolved_o2_profile': 'overwrite[list[float]]',
+            'dissolved_co2_profile': 'overwrite[list[float]]',
+            'biomass_profile': 'overwrite[list[float]]',
+            'o2_saturation_profile': 'overwrite[list[float]]',
+            'depths_m': 'overwrite[list[float]]',
+            # volume-averaged scalars (parity with the 0D reactor + summary panels)
+            'dissolved_o2': 'overwrite[float]',
+            'dissolved_co2': 'overwrite[float]',
+            'biomass': 'overwrite[float]',
+            'do_bottom': 'overwrite[float]',
+            'do_top': 'overwrite[float]',
+            'do_gradient': 'overwrite[float]',
+            'kla_o2': 'overwrite[float]',
+            'gas_holdup': 'overwrite[float]',
+            'o2_uptake_rate': 'overwrite[float]',
+            'specific_growth_rate': 'overwrite[float]',
+            'superficial_gas_velocity': 'overwrite[float]',
+        }
+
+    # geometry helpers -------------------------------------------------------
+    def _node_centers(self):
+        cfg = self.config
+        n = int(cfg['n_nodes'])
+        H = cfg['liquid_height_m']
+        dz = H / n
+        # index 0 = bottom (z small), index n-1 = top (z ~ H)
+        return np.array([(i + 0.5) * dz for i in range(n)]), dz
+
+    def _hydrostatic_pressure_atm(self, z_centers):
+        """P(z) in atm: head pressure + rho*g*(depth below free surface)."""
+        cfg = self.config
+        H = cfg['liquid_height_m']
+        depth_below = H - z_centers  # m below free surface (bottom = deepest)
+        return cfg['pressure_atm'] + RHO_LIQ * G * depth_below / self.P_ATM_PA
+
+    def _gas_molar_flow_per_h(self, gas_flow_Lpm):
+        """Total inlet gas molar flow (mol/h) from ideal gas at inlet P,T."""
+        cfg = self.config
+        V_m3_per_h = gas_flow_Lpm * 60.0 / 1000.0
+        P_pa = cfg['pressure_atm'] * self.P_ATM_PA
+        return P_pa * V_m3_per_h / (self.R_GAS * cfg['temperature_K'])
+
+    def _saturation_profiles(self, z_centers, gas_flow_Lpm):
+        """C*_O2(z), C*_CO2(z) (mg/L) from hydrostatic P(z) + plug-flow gas-O2 depletion.
+
+        Marches the gas stream bottom -> top: at each node the O2 transferred to
+        the liquid (kLa*(C*-C)) is removed from the rising gas, lowering the
+        gas-phase O2 mole fraction (and thus C*) at nodes above.
+        """
+        cfg = self.config
+        T = cfg['temperature_K']
+        P_z = self._hydrostatic_pressure_atm(z_centers)
+        n = len(z_centers)
+        V_node_L = cfg['volume_L'] / n
+        t = compute_transport_state(cfg, gas_flow_Lpm)
+        kla_o2 = t['kla_o2']
+
+        n_gas_total = self._gas_molar_flow_per_h(gas_flow_Lpm)   # mol/h
+        n_O2 = n_gas_total * cfg['o2_fraction_inlet']            # mol/h entering at bottom
+        MW_O2 = SPECIES_DATA['O2']['MW']                         # g/mol
+
+        cstar_o2 = np.zeros(n)
+        for i in range(n):  # bottom (0) -> top (n-1)
+            y_O2 = max(n_O2 / max(n_gas_total, 1e-12), 1e-6)
+            cstar_o2[i] = saturation_concentration('O2', T, P_z[i] * y_O2)
+            # O2 given up to the liquid at this node (mol/h), removed from gas stream
+            transfer_mgLh = max(kla_o2 * (cstar_o2[i] - self._O2[i]), 0.0)
+            transfer_mol_h = transfer_mgLh * V_node_L / 1000.0 / MW_O2
+            n_O2 = max(n_O2 - transfer_mol_h, 1e-9)
+
+        cstar_co2 = np.array([
+            saturation_concentration('CO2', T, P_z[i] * cfg['co2_fraction_inlet'])
+            for i in range(n)
+        ])
+        return cstar_o2, cstar_co2, t
+
+    # lifecycle --------------------------------------------------------------
+    def initial_state(self):
+        cfg = self.config
+        n = int(cfg['n_nodes'])
+        self._O2 = np.full(n, float(cfg['initial_do_mgL']))
+        self._CO2 = np.full(n, float(cfg['initial_dco2_mgL']))
+        self._X = np.full(n, float(cfg['initial_biomass_gL']))
+        z, _ = self._node_centers()
+        return self._emit(z, *self._saturation_profiles(z, cfg['gas_flow_rate_Lpm']))
+
+    def _emit(self, z, cstar_o2, cstar_co2, t):
+        cfg = self.config
+        O2p = np.maximum(self._O2, 0.0)
+        mu = cfg['max_growth_rate_per_h'] * O2p / (cfg['ks_oxygen_mgL'] + O2p)
+        our = (mu / max(cfg['yield_biomass_o2'], 1e-12) + cfg['maintenance_coeff_per_h']) \
+            * np.maximum(self._X, 0.0) * 1000.0
+        return {
+            'dissolved_o2_profile': [float(v) for v in self._O2],
+            'dissolved_co2_profile': [float(v) for v in self._CO2],
+            'biomass_profile': [float(v) for v in self._X],
+            'o2_saturation_profile': [float(v) for v in cstar_o2],
+            'depths_m': [float(v) for v in z],
+            'dissolved_o2': float(self._O2.mean()),
+            'dissolved_co2': float(self._CO2.mean()),
+            'biomass': float(self._X.mean()),
+            'do_bottom': float(self._O2[0]),
+            'do_top': float(self._O2[-1]),
+            'do_gradient': float(self._O2[0] - self._O2[-1]),
+            'kla_o2': float(t['kla_o2']),
+            'gas_holdup': float(t['alpha_gas']),
+            'o2_uptake_rate': float(our.mean()),
+            'specific_growth_rate': float(mu.mean()),
+            'superficial_gas_velocity': float(t['Ug']),
+        }
+
+    def update(self, state, interval):
+        if self._O2 is None:
+            self.initial_state()
+        cfg = self.config
+        gas_flow = state.get('gas_flow_rate_Lpm', cfg['gas_flow_rate_Lpm'])
+        z, dz = self._node_centers()
+        D_ax_h = cfg['axial_dispersion_m2_s'] * 3600.0   # m^2/s -> m^2/h
+
+        # Explicit sub-stepping: satisfy BOTH the diffusion CFL limit
+        # dt < dz^2/(2 D_ax) and the transport-relaxation limit dt < 1/kLa, so a
+        # stiff kLa or fine grid can't overshoot. (Deep O2-limited regimes can
+        # still zero-clamp; the demo composites stay in the aerobic regime.)
+        _t0 = compute_transport_state(cfg, gas_flow)
+        dt_diff = 0.4 * dz * dz / max(D_ax_h, 1e-12)
+        dt_react = 0.5 / max(_t0['kla_o2'], 1e-9)
+        # Cap the substep count so an extreme dispersion / fine grid can't make
+        # the explicit loop explode. At the cap the profile just approaches the
+        # well-mixed limit (large D_ax), which is the physically correct end.
+        MAX_SUBSTEPS = 3000
+        n_sub = max(1, int(math.ceil(interval / min(dt_diff, dt_react, interval))))
+        n_sub = min(n_sub, MAX_SUBSTEPS)
+        dt = interval / n_sub
+        # Clamp the effective diffusion to the explicit-stability limit for this
+        # dt, so an arbitrarily large axial_dispersion (or the substep cap above)
+        # can never make the explicit Laplacian blow up. Physically this means
+        # "mix at most as fast as the grid+step can resolve" — a larger D_ax then
+        # saturates at the well-mixed limit instead of producing NaNs.
+        D_eff = min(D_ax_h, 0.5 * dz * dz / dt)
+
+        # Vectorized Monod coefficients (mg/(L.h)) — pure numpy, no per-node call.
+        mg = cfg['max_growth_rate_per_h']
+        ks = cfg['ks_oxygen_mgL']
+        inv_yield = 1.0 / max(cfg['yield_biomass_o2'], 1e-12)
+        m_coeff = cfg['maintenance_coeff_per_h']
+        rq_factor = cfg['respiratory_quotient'] * (44.01 / 32.0)
+
+        def lap(a):
+            pad = np.concatenate(([a[0]], a, [a[-1]]))
+            return (pad[2:] - 2.0 * pad[1:-1] + pad[:-2]) / (dz * dz)
+
+        cstar_o2 = cstar_co2 = None
+        t = None
+        for _ in range(n_sub):
+            cstar_o2, cstar_co2, t = self._saturation_profiles(z, gas_flow)
+            O2, CO2, X = self._O2, self._CO2, self._X
+            O2p = np.maximum(O2, 0.0)
+            mu = mg * O2p / (ks + O2p)                       # 1/h
+            our = (mu * inv_yield + m_coeff) * np.maximum(X, 0.0) * 1000.0  # mg/(L.h)
+            cer = rq_factor * our
+
+            dO2 = t['kla_o2'] * (cstar_o2 - O2) - our + D_eff * lap(O2)
+            dCO2 = cer - t['kla_co2'] * (CO2 - cstar_co2) + D_eff * lap(CO2)
+            dX = mu * X + D_eff * lap(X)
+
+            self._O2 = np.maximum(O2 + dO2 * dt, 0.0)
+            self._CO2 = np.maximum(CO2 + dCO2 * dt, 0.0)
+            self._X = np.maximum(X + dX * dt, 0.0)
+
+        return self._emit(z, cstar_o2, cstar_co2, t)

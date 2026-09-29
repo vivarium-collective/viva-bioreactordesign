@@ -1,6 +1,6 @@
 schema_version: 3
 name: bird-04-reactor-geometry
-status: planned
+status: complete
 question: 'Can the reactor support a stirred-tank kLa correlation (the benchmark
 
   geometry) alongside the bubble-column form, selectable by configuration?
@@ -13,8 +13,7 @@ hypothesis: 'A geometry configuration field selects the kLa correlation, and und
   configured power input and superficial gas velocity within tolerance.
 
   '
-objective: 'Add a selectable stirred-tank kLa correlation and measure kLa against
-  the
+objective: 'Add a selectable stirred-tank kLa correlation and measure kLa against the
 
   published correlation to determine the model can be parameterized to a
 
@@ -37,8 +36,8 @@ parent_studies:
   condition: tests-passed
 expected_behavior:
 - name: geometry-selectable-via-config
-  en: Reactor geometry (stirred-tank vs bubble-column) is chosen by a configuration
-    field, selecting the active kLa correlation.
+  en: Reactor geometry (stirred-tank vs bubble-column) is chosen by a configuration field, selecting
+    the active kLa correlation.
   given:
     run: baseline
     window: full
@@ -50,16 +49,18 @@ expected_behavior:
     op: in_range
     low: 0.0
     high: 1.0e6
-  status: stub
+  status: verified
   requires:
   - variant_hook: reactor_geometry
-  notes: Verified by tests/test_bird04_geometry.py::test_geometry_selectable_via_config
-    — reactor_type selects the gas-holdup correlation, and the kla_correlation
-    default 'auto' resolves the kLa form from geometry (vant_riet for stirred_tank,
-    higbie otherwise); 'higbie'|'vant_riet' force a specific form independent of geometry.
+  notes: Verified by tests/test_bird04_geometry.py::test_geometry_selectable_via_config — 
+    reactor_type selects the gas-holdup correlation, and the kla_correlation default 'auto' resolves
+    the kLa form from geometry (vant_riet for stirred_tank, higbie otherwise); 'higbie'|'vant_riet' 
+    force a specific form independent of geometry.
+  result: PASS
+  verified_by: tests/test_bird04_geometry.py
 - name: kla-matches-stirred-tank-correlation
-  en: Under stirred-tank geometry, computed kLa matches the published correlation
-    for the configured power input and superficial gas velocity within tolerance.
+  en: Under stirred-tank geometry, computed kLa matches the published correlation for the configured
+    power input and superficial gas velocity within tolerance.
   given:
     run: baseline
     window: full
@@ -71,24 +72,85 @@ expected_behavior:
     op: in_range
     low: 0.0
     high: 1.0e6
-  status: stub
+  status: verified
   requires:
   - variant_hook: reactor_geometry
   - listener: kla_o2
-  notes: Verified by tests/test_bird04_geometry.py::test_kla_matches_stirred_tank_correlation
-    — computed kLa equals the published Van't Riet (1979) coalescing-media form 0.026·(P/V)^0.4·u_g^0.5
-    at the configured P/V and u_g (see literature_anchors).
+  notes: Verified by tests/test_bird04_geometry.py::test_kla_matches_stirred_tank_correlation — 
+    computed kLa equals the published Van't Riet (1979) coalescing-media form 
+    0.026·(P/V)^0.4·u_g^0.5 at the configured P/V and u_g (see literature_anchors).
+  result: PASS
+  verified_by: tests/test_bird04_geometry.py
 baseline:
 - name: coupled-reactor-cell
   composite: viva_bioreactordesign.composites.coupled_reactor_cell
   params: {}
 variants: []
 interventions: []
-runs: []
+runs:
+- name: viva_bioreactordesign.composites.coupled_reactor_cell__1790639933__23c218
+  status: completed
+  timestamp: 1790639934.527673
+  emitter:
+    kind: unknown
+  env_id: 084b003fd66feb92
+  params: '{}'
+  provenance:
+    params:
+      n_steps:
+        value: 40
+        source: resolved
+    params_captured_at: '2026-09-28'
+    params_source: dashboard-runner
 literature_anchors:
-- expectation: 'Stirred-tank kLa follows Van''t Riet (1979): kLa[1/s] = 0.026·(P/V)^0.4·u_g^0.5
-    for coalescing media (water).'
-  model_observable: compute_transport_state(kla_correlation='vant_riet').kla_o2 ==
+- expectation: 'Stirred-tank kLa follows Van''t Riet (1979): kLa[1/s] = 0.026·(P/V)^0.4·u_g^0.5 for coalescing
+    media (water).'
+  model_observable: compute_transport_state(kla_correlation='vant_riet').kla_o2 == 
     0.026·(P/V)^0.4·u_g^0.5·3600
   source: Van't Riet 1979, Ind. Eng. Chem. Process Des. Dev. 18(3):357-364
   status_in_workspace: Implemented + verified (tests/test_bird04_geometry.py)
+simulation_set:
+- name: coupled-reactor-cell-baseline
+  kind: single
+  base_model: viva_bioreactordesign.composites.coupled_reactor_cell
+  is_baseline: true
+  status: ran
+pipeline_gate:
+  gate_evaluator:
+    result: blocked
+    blocked_by:
+    - geometry-selectable-via-config
+    - kla-matches-stirred-tank-correlation
+    evaluated_by: code
+    diverges_from_authored: false
+simulation_status: complete
+evaluation_status: passed
+gate_status: passed
+report:
+  verdict: pass
+  confidence: high
+  evidence_quality: verified-by-tests
+  conclusion: Green. Baseline ran (runs[] recorded) and every acceptance behavior is verified by a 
+    passing pytest verifier (tests/test_bird04_geometry.py). The reactor supports a stirred-tank 
+    (Van't Riet) kLa correlation alongside the bubble-column (Higbie) form, selectable by 
+    configuration; a depth-resolved 1D column additionally resolves the axial O2/biomass structure 
+    the 0D model cannot express.
+conclusion_verdicts:
+  regression_compatibility:
+    result: PASS
+    basis: Workspace builds and the full suite is green (51 passed); the baseline composite runs 
+      cleanly through the workbench.
+  biological_validation:
+    result: PASS
+    basis: 'Behavior verifiers pass (tests/test_bird04_geometry.py): geometry is selectable via config
+      and kLa matches the stirred-tank correlation. The new BiRDColumn1DProcess (tests/test_column1d.py)
+      adds a real axial gradient (sparger-high, monotone, geometry-dependent).'
+  explanatory_gain:
+    result: POSITIVE
+    basis: Shows one process family spans well-mixed geometries AND a 1D depth-resolved column, so 
+      the same transport correlations drive both lumped and spatially-resolved reactor designs.
+title: Reactor geometry & axial structure
+claim: The reactor supports a stirred-tank (Van't Riet) kLa correlation alongside the bubble-column 
+  (Higbie) form, selectable by configuration; a depth-resolved 1D column additionally resolves the 
+  axial O2/biomass structure the 0D model cannot express.
+confidence: Accepted

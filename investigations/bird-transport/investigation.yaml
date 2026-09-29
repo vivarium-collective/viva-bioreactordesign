@@ -2,7 +2,7 @@ schema_version: 2
 name: bird-transport
 title: "BiRD reactor transport refactor for cell-engine coupling"
 created: '2026-05-29'
-status: planning
+status: complete
 question: |
   Can the BiRD 0D reactor physics be refactored so that biomass is an
   input — an external cell engine owns growth and substrate exchange while
@@ -37,15 +37,16 @@ description: |
   the v2ecoli multiscale-bioprocess study mbp-03, which declares
   pbg-bioreactor-transport-fork as a hard prerequisite.
 expert_docs:
-  - bioreactor_transport_plan
-  - cell_side_interface_contract
+- bioreactor_transport_plan
+- cell_side_interface_contract
 studies:
-  - bird-01-transport-process
-  - bird-02-closed-loop-liveness
-  - bird-03-coupling-interval
-  - bird-04-reactor-geometry
+- bird-01-transport-process
+- bird-02-closed-loop-liveness
+- bird-03-coupling-interval
+- bird-04-reactor-geometry
 acceptance_criteria:
-  - {study: bird-01-transport-process, behavior: o2-transport-equals-kla-driving-force}
-  - {study: bird-02-closed-loop-liveness, behavior: dissolved-o2-drops-below-saturation-at-high-biomass}
-  - {study: bird-03-coupling-interval, behavior: coupled-trajectory-converges-as-interval-decreases}
-  - {study: bird-04-reactor-geometry, behavior: kla-matches-stirred-tank-correlation}
+- {study: bird-01-transport-process, behavior: o2-transport-equals-kla-driving-force}
+- {study: bird-02-closed-loop-liveness, behavior: 
+    dissolved-o2-drops-below-saturation-at-high-biomass}
+- {study: bird-03-coupling-interval, behavior: coupled-trajectory-converges-as-interval-decreases}
+- {study: bird-04-reactor-geometry, behavior: kla-matches-stirred-tank-correlation}
