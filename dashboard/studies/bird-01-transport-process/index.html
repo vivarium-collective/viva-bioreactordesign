@@ -56,7 +56,7 @@
             <span class="dot"></span>2&nbsp;·&nbsp;Execution<span class="step-val">complete</span>
           </span>
           
-          <span class="status-step gate-step axis-evaluation_status gate-state-passed-with-conditions set" title="Gate 3 · Evidence">
+          <span class="status-step gate-step axis-evaluation_status gate-state-passed set" title="Gate 3 · Evidence">
             <span class="dot"></span>3&nbsp;·&nbsp;Evidence<span class="step-val">passed</span>
           </span>
           
@@ -94,17 +94,13 @@
           
         </div>
         
-        <div class="status-detail-row gate-row gate-state-passed-with-conditions">
+        <div class="status-detail-row gate-row gate-state-passed">
           <span class="status-detail-axis">3 · Evidence</span>
           <span class="status-chip gate-state-passed">passed</span>
           
-          <span class="gate-computed-chip gate-state-passed-with-conditions" title="completed run + recorded verdicts + visualization readiness gate (V4)">◆ computed: evaluated</span>
-          
-          <span class="gate-divergence-chip gate-divergence-chip-inline" title="Code-computed state disagrees with the authored axis.">⚠ diverges from authored</span>
+          <span class="gate-computed-chip gate-state-passed" title="completed run + recorded verdicts">◆ computed: evaluated</span>
           
           
-          
-          <span class="gate-viz-gap-note" style="font-size:0.86em;color:#92400e">visualization gap: no figures</span>
           
         </div>
         
@@ -182,7 +178,7 @@ behavior?
   </div>
   <div class="act-cluster" data-act="evidence">
     <div class="act-header">
-      <span class="act-gate-dot" data-gate="evidence" data-gate-state="passed-with-conditions"></span>
+      <span class="act-gate-dot" data-gate="evidence" data-gate-state="passed"></span>
       <span class="act-label">Evidence</span>
     </div>
     <div class="act-tabs">
@@ -858,6 +854,25 @@ standalone behavior is preserved.
 
     
     
+    
+    <div class="figure-card embed-viz-card">
+      <iframe src="/viva-bioreactordesign/dashboard/studies/bird-01-transport-process/viz/bird-01-dashboard.html"
+              class="figure-media-frame figure-media-frame--embed"
+              loading="lazy" title="bird-01-dashboard"
+              onload="window.__fitFigureFrame&&window.__fitFigureFrame(this)"
+              ></iframe>
+      
+      <p class="figure-desc muted">Transport-process split — DO/CO2 trajectories, biomass + growth rate, transport-rate vs O2 uptake (supply=demand), kLa + gas holdup.</p>
+      
+      <div class="figure-caption-row">
+        <span class="figure-source-chip">embed</span>
+        <span class="figure-title">bird-01-dashboard</span>
+        
+        <a href="/viva-bioreactordesign/dashboard/studies/bird-01-transport-process/viz/bird-01-dashboard.html" target="_blank" class="figure-open-link">Open in new tab ↗</a>
+      </div>
+    </div>
+    
+    
 
     <div id="viz-charts-panel" class="charts-panel figure-mount"></div>
 
@@ -1338,7 +1353,7 @@ requires: [{"listener": "cell_mass"}]</pre>
 </section>
 
 </main>
-<script>window.__DASH_CONFIG__ = { mode: "snapshot", interactiveUrl: "https://github.com/vivarium-collective/viva-bioreactordesign", basePath: "/viva-bioreactordesign/dashboard", inputsDownloadBase: "https://github.com/vivarium-collective/viva-bioreactordesign/raw/main", provenance: {"repo_slug": "vivarium-collective/viva-bioreactordesign", "repo_url": "https://github.com/vivarium-collective/viva-bioreactordesign", "commit": "88cba2f6c723e82299f01b88a5d0d889112ab151", "commit_url": "https://github.com/vivarium-collective/viva-bioreactordesign/commit/88cba2f6c723e82299f01b88a5d0d889112ab151", "branch": "main", "generated_at": "2026-09-29 00:28 UTC"} };</script>
+<script>window.__DASH_CONFIG__ = { mode: "snapshot", interactiveUrl: "https://github.com/vivarium-collective/viva-bioreactordesign", basePath: "/viva-bioreactordesign/dashboard", inputsDownloadBase: "https://github.com/vivarium-collective/viva-bioreactordesign/raw/main", provenance: {"repo_slug": "vivarium-collective/viva-bioreactordesign", "repo_url": "https://github.com/vivarium-collective/viva-bioreactordesign", "commit": "229f036bee523c4ee2fb09e9a17b169d190a00ff", "commit_url": "https://github.com/vivarium-collective/viva-bioreactordesign/commit/229f036bee523c4ee2fb09e9a17b169d190a00ff", "branch": "main", "generated_at": "2026-09-29 02:15 UTC"} };</script>
 <script src="/viva-bioreactordesign/dashboard/assets/data-source.js"></script>
 <script>
 window._studyName = "bird-01-transport-process";
