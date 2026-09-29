@@ -259,3 +259,9 @@ claim: 'The gas-liquid transport physics is cleanly extracted: the standalone Bi
   kLa-driven O2 transport, zero glucose transport, and symmetric CO2 stripping - biomass ownership sits
   entirely with the cell engine.'
 confidence: Accepted
+embed_visualizations:
+- name: bird-01-dashboard
+  title: BiRD-01 dashboard
+  url: /studies/bird-01-transport-process/viz/bird-01-dashboard.html
+  description: Transport-process split — DO/CO2 trajectories, biomass + growth rate, transport-rate 
+    vs O2 uptake (supply=demand), kLa + gas holdup.

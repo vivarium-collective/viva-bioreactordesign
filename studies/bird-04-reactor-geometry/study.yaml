@@ -154,3 +154,10 @@ claim: The reactor supports a stirred-tank (Van't Riet) kLa correlation alongsid
   (Higbie) form, selectable by configuration; a depth-resolved 1D column additionally resolves the 
   axial O2/biomass structure the 0D model cannot express.
 confidence: Accepted
+embed_visualizations:
+- name: bird-04-dashboard
+  title: BiRD-04 dashboard
+  url: /studies/bird-04-reactor-geometry/viz/bird-04-dashboard.html
+  description: Reactor geometry & axial structure — geometry-selectable kLa (Higbie vs Van't Riet) 
+    and the depth x time heatmaps of dissolved O2 and biomass from the 1D column, plus the axial 
+    gradient.
