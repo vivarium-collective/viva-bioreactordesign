@@ -26,37 +26,25 @@ parent_studies:
 # here; see framework log #14 vicinity.
 expected_behavior:
 - name: coupling-interval-is-configurable
-  en: "The coupling/update interval is a process parameter with a documented default, and runs honor the
-    configured value."
+  en: "The coupling/update interval is a process parameter with a documented default, and runs honor the configured value."
   given: {run: baseline, window: full}
   measure: {kind: listener_path, path: "coupling_interval", reduce: median}
   expect: {op: in_range, low: 0.0, high: 1.0e6}
   status: verified
   requires: [variant_hook: coupling_interval]
-  notes: "Verified by tests/test_bird03_coupling_interval.py::test_coupling_interval_is_configurable —
-    the interval is a composite parameter threaded onto both processes; runs honor it (smaller interval
-    → more steps for the same horizon)."
+  notes: "Verified by tests/test_bird03_coupling_interval.py::test_coupling_interval_is_configurable — the interval is a composite parameter threaded onto both processes; runs honor it (smaller interval → more steps for the same horizon)."
   result: PASS
   verified_by: tests/test_bird03_coupling_interval.py
 - name: coupled-trajectory-converges-as-interval-decreases
-  en: "Halving the coupling interval changes the dissolved-O2 trajectory by less than a stated tolerance
-    — convergence rather than interval-dependence."
+  en: "Halving the coupling interval changes the dissolved-O2 trajectory by less than a stated tolerance — convergence rather than interval-dependence."
   given: {run: baseline, window: full}
   measure: {kind: listener_path, path: "dissolved_o2", reduce: series}
   expect: {op: in_range, low: 0.0, high: 8.0}
   status: verified
   requires: [variant_hook: coupling_interval]
-  notes: "Verified by tests/test_bird03_coupling_interval.py::test_coupled_trajectory_converges_as_interval_decreases
-    — DO at a fixed time converges to a fine reference as the interval halves (errors strictly decreasing;
-    finest < 0.005 mg/L). Cross-run convergence isn't expressible in the dashboard grammar (issue #96),
-    hence pytest."
+  notes: "Verified by tests/test_bird03_coupling_interval.py::test_coupled_trajectory_converges_as_interval_decreases — DO at a fixed time converges to a fine reference as the interval halves (errors strictly decreasing; finest < 0.005 mg/L). Cross-run convergence isn't expressible in the dashboard grammar (issue #96), hence pytest."
   result: PASS
   verified_by: tests/test_bird03_coupling_interval.py
-baseline:
-- name: coupled-reactor-cell
-  composite: viva_bioreactordesign.composites.coupled_reactor_cell
-  params: {}
-variants: []
 interventions: []
 runs:
 - name: viva_bioreactordesign.composites.coupled_reactor_cell__1790639932__f371ed
@@ -97,30 +85,29 @@ report:
   verdict: pass
   confidence: high
   evidence_quality: verified-by-tests
-  conclusion: Green. Baseline ran (runs[] recorded) and every acceptance behavior is verified by a 
-    passing pytest verifier (tests/test_bird03_coupling_interval.py). The reactor coupling/update 
-    interval is a tunable parameter, and the coupled trajectory converges as the interval decreases 
-    (dt -> 0).
+  conclusion: Green. Baseline ran (runs[] recorded) and every acceptance behavior is verified by a passing pytest verifier (tests/test_bird03_coupling_interval.py). The reactor coupling/update interval is a tunable parameter, and the coupled trajectory converges as the interval decreases (dt -> 0).
 conclusion_verdicts:
   regression_compatibility:
     result: PASS
-    basis: Workspace builds and the full suite is green (51 passed); the baseline composite runs 
-      cleanly through the workbench.
+    basis: Workspace builds and the full suite is green (51 passed); the baseline composite runs cleanly through the workbench.
   biological_validation:
     result: PASS
-    basis: 'Behavior verifiers pass (tests/test_bird03_coupling_interval.py): the coupling interval is
-      configurable, and the trajectory converges as the interval is refined.'
+    basis: 'Behavior verifiers pass (tests/test_bird03_coupling_interval.py): the coupling interval is configurable, and the trajectory converges as the interval is refined.'
   explanatory_gain:
     result: POSITIVE
-    basis: 'Establishes numerical trust in the coupled scheme: results are interval-independent in the
-      fine-dt limit, so the coupling interval is a convergence knob rather than a hidden model parameter.'
+    basis: 'Establishes numerical trust in the coupled scheme: results are interval-independent in the fine-dt limit, so the coupling interval is a convergence knob rather than a hidden model parameter.'
 title: Coupling-interval convergence
-claim: The reactor coupling/update interval is a tunable parameter, and the coupled trajectory 
-  converges as the interval decreases (dt -> 0).
+claim: The reactor coupling/update interval is a tunable parameter, and the coupled trajectory converges as the interval decreases (dt -> 0).
 confidence: Accepted
 embed_visualizations:
 - name: bird-03-dashboard
   title: BiRD-03 dashboard
   url: /studies/bird-03-coupling-interval/viz/bird-03-dashboard.html
-  description: Coupling-interval convergence — dt trajectory fan, log-log error->0 (order~1.2), 
-    biomass collapse, transient error decay.
+  description: Coupling-interval convergence — dt trajectory fan, log-log error->0 (order~1.2), biomass collapse, transient error decay.
+conditions:
+  baseline:
+    name: coupled-reactor-cell
+    composite: viva_bioreactordesign.composites.coupled_reactor_cell
+    params: {}
+  variants: []
+  model_settings: []
