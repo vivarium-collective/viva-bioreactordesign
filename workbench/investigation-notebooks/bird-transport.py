@@ -282,7 +282,7 @@ def _render_one(address, config, runs_db, study_yaml, overrides=None):
 
 # **Composite `viva_bioreactordesign.composites.reactor`** — `spec_viva_bioreactordesign_composites_reactor` (static spec file, editable dict)
 
-from viva_superpowers.composite_spec import load_spec
+from discovery_engine.composite_spec import load_spec
 spec_viva_bioreactordesign_composites_reactor = load_spec(REPO / 'viva_bioreactordesign/composites/reactor.composite.yaml')
 describe_spec(spec_viva_bioreactordesign_composites_reactor)
 
@@ -332,7 +332,7 @@ if RERUN:
     from process_bigraph import Composite
     try:
         with quiet():  # keep per-step stdout out of the notebook
-            from viva_superpowers.composite_spec import build_composite_from_spec
+            from discovery_engine.composite_spec import build_composite_from_spec
             _comp = build_composite_from_spec(spec_viva_bioreactordesign_composites_reactor, {'interval': INTERVAL_standalone_reactor}, core=core)
             _comp.run(STEPS_standalone_reactor)
         print('ran', 'standalone-reactor', f'(viva_bioreactordesign.composites.reactor) for', STEPS_standalone_reactor, 'steps')
@@ -371,7 +371,7 @@ else:
 
 # **Composite `viva_bioreactordesign.composites.coupled_reactor_cell`** — `spec_viva_bioreactordesign_composites_coupled_reactor_cell` (static spec file, editable dict)
 
-from viva_superpowers.composite_spec import load_spec
+from discovery_engine.composite_spec import load_spec
 spec_viva_bioreactordesign_composites_coupled_reactor_cell = load_spec(REPO / 'viva_bioreactordesign/composites/coupled_reactor_cell.composite.yaml')
 describe_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell)
 
@@ -422,7 +422,7 @@ if RERUN:
     from process_bigraph import Composite
     try:
         with quiet():  # keep per-step stdout out of the notebook
-            from viva_superpowers.composite_spec import build_composite_from_spec
+            from discovery_engine.composite_spec import build_composite_from_spec
             _comp = build_composite_from_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell, {'interval': INTERVAL_coupled_reactor_cell}, core=core)
             _comp.run(STEPS_coupled_reactor_cell)
         print('ran', 'coupled-reactor-cell', f'(viva_bioreactordesign.composites.coupled_reactor_cell) for', STEPS_coupled_reactor_cell, 'steps')
@@ -458,7 +458,7 @@ else:
 
 # **Composite `viva_bioreactordesign.composites.coupled_reactor_cell`** — `spec_viva_bioreactordesign_composites_coupled_reactor_cell` (static spec file, editable dict)
 
-from viva_superpowers.composite_spec import load_spec
+from discovery_engine.composite_spec import load_spec
 spec_viva_bioreactordesign_composites_coupled_reactor_cell = load_spec(REPO / 'viva_bioreactordesign/composites/coupled_reactor_cell.composite.yaml')
 describe_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell)
 
@@ -509,7 +509,7 @@ if RERUN:
     from process_bigraph import Composite
     try:
         with quiet():  # keep per-step stdout out of the notebook
-            from viva_superpowers.composite_spec import build_composite_from_spec
+            from discovery_engine.composite_spec import build_composite_from_spec
             _comp = build_composite_from_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell, {'interval': INTERVAL_coupled_reactor_cell}, core=core)
             _comp.run(STEPS_coupled_reactor_cell)
         print('ran', 'coupled-reactor-cell', f'(viva_bioreactordesign.composites.coupled_reactor_cell) for', STEPS_coupled_reactor_cell, 'steps')
@@ -545,7 +545,7 @@ else:
 
 # **Composite `viva_bioreactordesign.composites.coupled_reactor_cell`** — `spec_viva_bioreactordesign_composites_coupled_reactor_cell` (static spec file, editable dict)
 
-from viva_superpowers.composite_spec import load_spec
+from discovery_engine.composite_spec import load_spec
 spec_viva_bioreactordesign_composites_coupled_reactor_cell = load_spec(REPO / 'viva_bioreactordesign/composites/coupled_reactor_cell.composite.yaml')
 describe_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell)
 
@@ -596,7 +596,7 @@ if RERUN:
     from process_bigraph import Composite
     try:
         with quiet():  # keep per-step stdout out of the notebook
-            from viva_superpowers.composite_spec import build_composite_from_spec
+            from discovery_engine.composite_spec import build_composite_from_spec
             _comp = build_composite_from_spec(spec_viva_bioreactordesign_composites_coupled_reactor_cell, {'interval': INTERVAL_coupled_reactor_cell}, core=core)
             _comp.run(STEPS_coupled_reactor_cell)
         print('ran', 'coupled-reactor-cell', f'(viva_bioreactordesign.composites.coupled_reactor_cell) for', STEPS_coupled_reactor_cell, 'steps')
