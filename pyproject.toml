@@ -28,3 +28,8 @@ pbg-superpowers = { git = "https://github.com/vivarium-collective/viva-superpowe
 
 [tool.setuptools.packages.find]
 include = ["viva_bioreactordesign*", "pbg_bioreactordesign*"]  # viva_bioreactordesign real; pbg_bioreactordesign = back-compat import shim
+
+[tool.setuptools.package-data]
+# Ship declarative composite specs so a pinned/wheel install resolves
+# `viva_bioreactordesign.composites.<stem>` (build_composite + dashboard resolver read these).
+"viva_bioreactordesign.composites" = ["*.composite.yaml"]
